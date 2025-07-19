@@ -1,6 +1,6 @@
 [BITS 32]
 [GLOBAL _start]
-extern main          ; We will call this in kernel.c
+extern main          ; Reference to the C function main
 
 _start:
     cli
@@ -13,23 +13,21 @@ _start:
     mov gs, ax
     mov ss, ax
 
-    ; Setup stack
+    ; Setup stack pointer
     mov esp, 0x9FB00
 
-    ; Optional: Show debug text
+    ; Print message to screen using BIOS text mode (0xB8000)
     mov edi, 0xB8000
     mov esi, message
     call print_string
 
-    ; Call the C kernel entry point
+    ; Call the C kernel main function
     call main
 
 .hang:
     cli
     hlt
     jmp .hang
-
-    
 
 print_string:
     lodsb
