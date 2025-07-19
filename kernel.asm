@@ -1,42 +1,45 @@
-[BITS 32]
-[GLOBAL _start]
-extern main          ; Reference to the C function main
+[BITS 16]
+[ORG 0x1000]
+global _start
+extern main
 
 _start:
     cli
+    lgdt [gdt_descriptor]
 
-    ; Setup segment registers
-    mov ax, 0x10
+    mov eax, cr0
+    or eax, 1
+    mov cr0, eax
+
+    jmp CODE_SEG:init_pm
+
+[BITS 32]
+init_pm:
+    mov ax, DATA_SEG
     mov ds, ax
+    mov ss, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
-    mov ss, ax
 
-    ; Setup stack pointer
-    mov esp, 0x9FB00
+    mov esp, 0x90000
 
-    ; Print message to screen using BIOS text mode (0xB8000)
-    mov edi, 0xB8000
-    mov esi, message
-    call print_string
-
-    ; Call the C kernel main function
     call main
 
 .hang:
-    cli
     hlt
     jmp .hang
 
-print_string:
-    lodsb
-    cmp al, 0
-    je .done
-    mov ah, 0x0F
-    stosw
-    jmp print_string
-.done:
-    ret
+; ===== GDT =====
+gdt_start:
+    dq 0x0000000000000000
+    dq 0x00CF9A000000FFFF ; Code segment
+    dq 0x00CF92000000FFFF ; Data segment
+gdt_end:
 
-message: db "Kernel Loaded!", 0
+gdt_descriptor:
+    dw gdt_end - gdt_start - 1
+    dd gdt_start
+
+CODE_SEG equ 0x08
+DATA_SEG equ 0x10
