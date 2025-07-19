@@ -1,23 +1,44 @@
-[BITS 32]              ; We are in 32-bit mode
-[GLOBAL _start]        ; Make _start visible to the linker this why its global
-
+[BITS 32]
+[GLOBAL _start]
+extern main          ; We will call this in kernel.c
 
 _start:
-    cli                 ; pause the interrpts i lowkey dont know 
+    cli
 
-    ; Setting all segments to 0x10 
+    ; Setup segment registers
     mov ax, 0x10
     mov ds, ax
     mov es, ax
-    mov fs, ax          
+    mov fs, ax
     mov gs, ax
     mov ss, ax
 
+    ; Setup stack
+    mov esp, 0x9FB00
 
-    mov esp, 0x9FB00       ; Setting stack pointer to safe adress because stack grows down so its set at a high adress
+    ; Optional: Show debug text
+    mov edi, 0xB8000
+    mov esi, message
+    call print_string
 
-    call main             ; main function inside of our c file 
-
+    ; Call the C kernel entry point
+    call main
 
 .hang:
-    jmp .hang              ; This makes an infite loop
+    cli
+    hlt
+    jmp .hang
+
+    
+
+print_string:
+    lodsb
+    cmp al, 0
+    je .done
+    mov ah, 0x0F
+    stosw
+    jmp print_string
+.done:
+    ret
+
+message: db "Kernel Loaded!", 0
